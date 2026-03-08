@@ -4,7 +4,6 @@
 <head>
 
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Life Dashboard</title>
@@ -51,6 +50,10 @@ margin-bottom:15px;
 box-shadow:0 4px 10px rgba(0,0,0,0.05);
 }
 
+label{
+font-weight:bold;
+}
+
 input,select{
 padding:12px;
 border-radius:6px;
@@ -66,16 +69,35 @@ padding:12px;
 border:none;
 border-radius:6px;
 cursor:pointer;
-background:#3b82f6;
-color:white;
 font-weight:bold;
 margin-top:6px;
 width:100%;
 font-size:15px;
 }
 
+.save{
+background:#3b82f6;
+color:white;
+}
+
+.clear{
+background:#f59e0b;
+color:white;
+}
+
+.reset{
+background:#ef4444;
+color:white;
+}
+
 button:hover{
-background:#2563eb;
+opacity:0.9;
+}
+
+.error{
+color:red;
+font-size:14px;
+margin-bottom:10px;
 }
 
 .summary{
@@ -120,18 +142,6 @@ width:100% !important;
 height:auto !important;
 }
 
-@media(max-width:600px){
-
-.header{
-font-size:18px;
-}
-
-.section{
-padding:14px;
-}
-
-}
-
 </style>
 
 </head>
@@ -158,10 +168,13 @@ Self Improvement Dashboard
 
 <h3>Daily Entry</h3>
 
+<div class="error" id="error"></div>
+
 <label>Gym</label>
 <select id="gym">
-<option value="0">No</option>
+<option value="">Select</option>
 <option value="1">Yes</option>
+<option value="0">No</option>
 </select>
 
 <label>Coding Problems</label>
@@ -170,7 +183,11 @@ Self Improvement Dashboard
 <label>Money Spent ₹</label>
 <input id="money" type="number">
 
-<button onclick="saveData()">Save Entry</button>
+<button class="save" onclick="saveData()">Save Entry</button>
+
+<button class="clear" onclick="clearInputs()">Clear</button>
+
+<button class="reset" onclick="resetData()">Reset All Data</button>
 
 <button onclick="exportData()">Export Backup</button>
 
@@ -248,12 +265,13 @@ document.getElementById("clock").innerText=date+" | "+time;
 }
 
 setInterval(updateClock,1000);
-
 updateClock();
 
 let today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 
 let data=JSON.parse(localStorage.getItem("lifeTracker"))||[];
+
+let chart;
 
 let savedSalary=localStorage.getItem("salary");
 
@@ -271,20 +289,54 @@ render();
 
 function saveData(){
 
-let gym=parseInt(document.getElementById("gym").value);
+let gym=document.getElementById("gym").value;
+let problems=document.getElementById("problems").value;
+let money=document.getElementById("money").value;
 
-let problems=parseInt(document.getElementById("problems").value)||0;
+let error=document.getElementById("error");
 
-let money=parseInt(document.getElementById("money").value)||0;
+if(gym==="" || problems==="" || money===""){
+error.innerText="All fields are required.";
+return;
+}
+
+error.innerText="";
 
 data.push({
 date:today,
-gym:gym,
-problems:problems,
-money:money
+gym:parseInt(gym),
+problems:parseInt(problems),
+money:parseInt(money)
 });
 
 localStorage.setItem("lifeTracker",JSON.stringify(data));
+
+render();
+
+clearInputs();
+
+}
+
+function clearInputs(){
+
+document.getElementById("gym").value="";
+document.getElementById("problems").value="";
+document.getElementById("money").value="";
+document.getElementById("error").innerText="";
+
+}
+
+function resetData(){
+
+if(!confirm("This will delete all dashboard data. Continue?")) return;
+
+data=[];
+
+localStorage.clear();
+
+document.getElementById("salaryInput").value=70000;
+
+clearInputs();
 
 render();
 
@@ -329,9 +381,7 @@ expenseData.push(d.money);
 });
 
 document.getElementById("gymTotal").innerText=gymTotal;
-
 document.getElementById("problemTotal").innerText=problemTotal;
-
 document.getElementById("moneyTotal").innerText=moneyTotal;
 
 let salary=parseInt(document.getElementById("salaryInput").value)||0;
@@ -343,8 +393,6 @@ document.getElementById("savingTotal").innerText=savings;
 drawChart(labels,expenseData);
 
 }
-
-let chart;
 
 function drawChart(labels,data){
 
