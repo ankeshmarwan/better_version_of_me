@@ -9,6 +9,7 @@
 <title>Life Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
@@ -75,30 +76,12 @@ width:100%;
 font-size:15px;
 }
 
-.save{
-background:#3b82f6;
-color:white;
-}
+.save{background:#3b82f6;color:white;}
+.clear{background:#f59e0b;color:white;}
+.reset{background:#ef4444;color:white;}
+.export{background:#10b981;color:white;}
 
-.clear{
-background:#f59e0b;
-color:white;
-}
-
-.reset{
-background:#ef4444;
-color:white;
-}
-
-button:hover{
-opacity:0.9;
-}
-
-.error{
-color:red;
-font-size:14px;
-margin-bottom:10px;
-}
+button:hover{opacity:0.9;}
 
 .summary{
 display:grid;
@@ -138,8 +121,12 @@ text-align:center;
 
 canvas{
 margin-top:20px;
-width:100% !important;
-height:auto !important;
+}
+
+.error{
+color:red;
+font-size:14px;
+margin-bottom:10px;
 }
 
 </style>
@@ -154,15 +141,6 @@ Self Improvement Dashboard
 </div>
 
 <div class="container">
-
-<div class="section">
-
-<h3>Settings</h3>
-
-<label>Monthly Salary ₹</label>
-<input id="salaryInput" type="number" value="70000">
-
-</div>
 
 <div class="section">
 
@@ -183,13 +161,13 @@ Self Improvement Dashboard
 <label>Money Spent ₹</label>
 <input id="money" type="number">
 
+<label>Cigarettes Smoked Today</label>
+<input id="cigs" type="number" min="0">
+
 <button class="save" onclick="saveData()">Save Entry</button>
-
 <button class="clear" onclick="clearInputs()">Clear</button>
-
 <button class="reset" onclick="resetData()">Reset All Data</button>
-
-<button onclick="exportData()">Export Backup</button>
+<button class="export" onclick="exportData()">Export Excel</button>
 
 </div>
 
@@ -210,13 +188,23 @@ Self Improvement Dashboard
 </div>
 
 <div class="card">
-<p>Total Money Spent</p>
-<h2>₹<span id="moneyTotal">0</span></h2>
+<p>Total Cigarettes</p>
+<h2 id="cigTotal">0</h2>
 </div>
 
 <div class="card">
-<p>Estimated Savings</p>
-<h2>₹<span id="savingTotal">0</span></h2>
+<p>Smoke-Free Days</p>
+<h2 id="smokeFree">0</h2>
+</div>
+
+<div class="card">
+<p>Average / Day</p>
+<h2 id="avgCigs">0</h2>
+</div>
+
+<div class="card">
+<p>Total Money</p>
+<h2 id="moneyTotal">0</h2>
 </div>
 
 </div>
@@ -226,8 +214,14 @@ Self Improvement Dashboard
 <div class="section">
 
 <h3>Expense Trend</h3>
-
 <canvas id="expenseChart"></canvas>
+
+</div>
+
+<div class="section">
+
+<h3>Daily Smoking Trend</h3>
+<canvas id="smokingChart"></canvas>
 
 </div>
 
@@ -242,6 +236,7 @@ Self Improvement Dashboard
 <th>Gym</th>
 <th>Problems</th>
 <th>Money</th>
+<th>Cigarettes</th>
 </tr>
 
 </table>
@@ -257,7 +252,6 @@ function updateClock(){
 let now=new Date();
 
 let time=now.toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'});
-
 let date=now.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'});
 
 document.getElementById("clock").innerText=date+" | "+time;
@@ -269,34 +263,22 @@ updateClock();
 
 let today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 
-let data=JSON.parse(localStorage.getItem("lifeTracker"))||[];
+let data=JSON.parse(localStorage.getItem("lifeTracker")) || [];
 
-let chart;
-
-let savedSalary=localStorage.getItem("salary");
-
-if(savedSalary){
-document.getElementById("salaryInput").value=savedSalary;
-}
-
-document.getElementById("salaryInput").addEventListener("change",function(){
-
-localStorage.setItem("salary",this.value);
-
-render();
-
-});
+let expenseChart;
+let smokingChart;
 
 function saveData(){
 
 let gym=document.getElementById("gym").value;
 let problems=document.getElementById("problems").value;
 let money=document.getElementById("money").value;
+let cigs=document.getElementById("cigs").value;
 
 let error=document.getElementById("error");
 
-if(gym==="" || problems==="" || money===""){
-error.innerText="All fields are required.";
+if(gym==="" || problems==="" || money==="" || cigs===""){
+error.innerText="All fields required";
 return;
 }
 
@@ -304,40 +286,32 @@ error.innerText="";
 
 data.push({
 date:today,
-gym:parseInt(gym),
-problems:parseInt(problems),
-money:parseInt(money)
+gym:parseInt(gym) || 0,
+problems:parseInt(problems) || 0,
+money:parseInt(money) || 0,
+cigs:parseInt(cigs) || 0
 });
 
 localStorage.setItem("lifeTracker",JSON.stringify(data));
 
 render();
-
 clearInputs();
 
 }
 
 function clearInputs(){
-
 document.getElementById("gym").value="";
 document.getElementById("problems").value="";
 document.getElementById("money").value="";
-document.getElementById("error").innerText="";
-
+document.getElementById("cigs").value="";
 }
 
 function resetData(){
 
-if(!confirm("This will delete all dashboard data. Continue?")) return;
+if(!confirm("Delete all data?")) return;
 
 data=[];
-
 localStorage.clear();
-
-document.getElementById("salaryInput").value=70000;
-
-clearInputs();
-
 render();
 
 }
@@ -352,66 +326,96 @@ table.innerHTML=`
 <th>Gym</th>
 <th>Problems</th>
 <th>Money</th>
+<th>Cigarettes</th>
 </tr>
 `;
 
 let gymTotal=0;
 let problemTotal=0;
 let moneyTotal=0;
+let cigTotal=0;
+let smokeFree=0;
 
 let labels=[];
 let expenseData=[];
+let smokingData=[];
 
 data.forEach(d=>{
+
+let cig=parseInt(d.cigs) || 0;
+let money=parseInt(d.money) || 0;
+let problems=parseInt(d.problems) || 0;
+let gym=parseInt(d.gym) || 0;
 
 let row=table.insertRow();
 
 row.insertCell(0).innerText=d.date;
-row.insertCell(1).innerText=d.gym?"Yes":"No";
-row.insertCell(2).innerText=d.problems;
-row.insertCell(3).innerText=d.money;
+row.insertCell(1).innerText=gym?"Yes":"No";
+row.insertCell(2).innerText=problems;
+row.insertCell(3).innerText=money;
+row.insertCell(4).innerText=cig;
 
-gymTotal+=d.gym;
-problemTotal+=d.problems;
-moneyTotal+=d.money;
+gymTotal+=gym;
+problemTotal+=problems;
+moneyTotal+=money;
+cigTotal+=cig;
+
+if(cig===0) smokeFree++;
 
 labels.push(d.date);
-expenseData.push(d.money);
+expenseData.push(money);
+smokingData.push(cig);
 
 });
 
 document.getElementById("gymTotal").innerText=gymTotal;
 document.getElementById("problemTotal").innerText=problemTotal;
 document.getElementById("moneyTotal").innerText=moneyTotal;
+document.getElementById("cigTotal").innerText=cigTotal;
+document.getElementById("smokeFree").innerText=smokeFree;
 
-let salary=parseInt(document.getElementById("salaryInput").value)||0;
+let avg=data.length ? (cigTotal/data.length).toFixed(2) : 0;
+document.getElementById("avgCigs").innerText=avg;
 
-let savings=salary-moneyTotal;
-
-document.getElementById("savingTotal").innerText=savings;
-
-drawChart(labels,expenseData);
+drawExpense(labels,expenseData);
+drawSmoking(labels,smokingData);
 
 }
 
-function drawChart(labels,data){
+function drawExpense(labels,dataPoints){
 
-if(chart){
-chart.destroy();
-}
+if(expenseChart) expenseChart.destroy();
 
-let ctx=document.getElementById("expenseChart");
-
-chart=new Chart(ctx,{
+expenseChart=new Chart(document.getElementById("expenseChart"),{
 type:"line",
 data:{
 labels:labels,
 datasets:[{
-label:"Daily Expense ₹",
-data:data,
+label:"Expense ₹",
+data:dataPoints,
 borderColor:"#ef4444",
 backgroundColor:"rgba(239,68,68,0.1)",
-borderWidth:2,
+fill:true,
+tension:0.3
+}]
+}
+});
+
+}
+
+function drawSmoking(labels,dataPoints){
+
+if(smokingChart) smokingChart.destroy();
+
+smokingChart=new Chart(document.getElementById("smokingChart"),{
+type:"line",
+data:{
+labels:labels,
+datasets:[{
+label:"Cigarettes",
+data:dataPoints,
+borderColor:"#6366f1",
+backgroundColor:"rgba(99,102,241,0.1)",
 fill:true,
 tension:0.3
 }]
@@ -422,17 +426,25 @@ tension:0.3
 
 function exportData(){
 
-let dataStr=JSON.stringify(data);
+if(data.length===0){
+alert("No data to export");
+return;
+}
 
-let blob=new Blob([dataStr],{type:"application/json"});
+let rows=data.map(d=>({
+Date:d.date,
+Gym:(parseInt(d.gym)||0)?"Yes":"No",
+Coding_Problems:parseInt(d.problems)||0,
+Money_Spent:parseInt(d.money)||0,
+Cigarettes_Smoked:parseInt(d.cigs)||0
+}));
 
-let a=document.createElement("a");
+let worksheet=XLSX.utils.json_to_sheet(rows);
+let workbook=XLSX.utils.book_new();
 
-a.href=URL.createObjectURL(blob);
+XLSX.utils.book_append_sheet(workbook,worksheet,"Dashboard");
 
-a.download="tracker_backup.json";
-
-a.click();
+XLSX.writeFile(workbook,"life_dashboard.xlsx");
 
 }
 
