@@ -192,7 +192,7 @@ Self Improvement Dashboard
 <div class="card"><p>Total Cigarettes</p><h2 id="cigTotal">0</h2></div>
 <div class="card"><p>Smoke-Free Days</p><h2 id="smokeFree">0</h2></div>
 <div class="card"><p>Average / Day</p><h2 id="avgCigs">0</h2></div>
-<div class="card"><p>Total Money</p><h2 id="moneyTotal">0</h2></div>
+<div class="card"><p>Money Spent</p><h2 id="moneyTotal">0</h2></div>
 <div class="card"><p>Estimated Savings</p><h2 id="savingTotal">0</h2></div>
 
 </div>
@@ -218,7 +218,7 @@ Self Improvement Dashboard
 <th>Date</th>
 <th>Gym</th>
 <th>Problems</th>
-<th>Money</th>
+<th>Money Spent</th>
 <th>Cigarettes</th>
 </tr>
 </table>
@@ -230,15 +230,11 @@ Self Improvement Dashboard
 <script>
 
 function updateClock(){
-
 let now=new Date();
 let time=now.toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'});
 let date=now.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'});
-
 document.getElementById("clock").innerText=date+" | "+time;
-
 }
-
 setInterval(updateClock,1000);
 updateClock();
 
@@ -248,13 +244,9 @@ let expenseChart;
 let smokingChart;
 
 function saveSalary(){
-
 let salary=document.getElementById("salaryInput").value;
-
 localStorage.setItem("salary",salary);
-
 render();
-
 }
 
 function saveData(){
@@ -279,11 +271,10 @@ let existing=data.find(d=>d.date===today);
 
 if(existing){
 
+existing.gym=parseInt(gym);
 existing.problems+=problems;
-existing.money+=money;
+existing.money=money;
 existing.cigs+=cigs;
-
-if(gym==="1") existing.gym=1;
 
 }else{
 
@@ -305,23 +296,17 @@ clearInputs();
 }
 
 function clearInputs(){
-
 document.getElementById("gym").value="";
 document.getElementById("problems").value="";
 document.getElementById("money").value="";
 document.getElementById("cigs").value="";
-
 }
 
 function resetData(){
-
 if(!confirm("Delete all data?")) return;
-
 data=[];
 localStorage.clear();
-
 render();
-
 }
 
 function render(){
@@ -333,7 +318,7 @@ table.innerHTML=`
 <th>Date</th>
 <th>Gym</th>
 <th>Problems</th>
-<th>Money</th>
+<th>Money Spent</th>
 <th>Cigarettes</th>
 </tr>
 `;
@@ -358,12 +343,17 @@ row.insertCell(2).innerText=d.problems;
 row.insertCell(3).innerText=d.money;
 row.insertCell(4).innerText=d.cigs;
 
-gymTotal+=d.gym;
+if(d.gym===1){
+gymTotal++;
+}
+
 problemTotal+=d.problems;
 moneyTotal+=d.money;
 cigTotal+=d.cigs;
 
-if(d.cigs===0) smokeFree++;
+if(d.cigs===0){
+smokeFree++;
+}
 
 labels.push(d.date);
 expenseData.push(d.money);
@@ -381,7 +371,6 @@ let avg=data.length?(cigTotal/data.length).toFixed(2):0;
 document.getElementById("avgCigs").innerText=avg;
 
 let salary=parseInt(localStorage.getItem("salary"))||0;
-
 document.getElementById("savingTotal").innerText=salary-moneyTotal;
 
 drawCharts(labels,expenseData,smokingData);
@@ -395,12 +384,26 @@ if(smokingChart)smokingChart.destroy();
 
 expenseChart=new Chart(document.getElementById("expenseChart"),{
 type:"line",
-data:{labels:labels,datasets:[{label:"Expense ₹",data:expenses,borderColor:"red"}]}
+data:{
+labels:labels,
+datasets:[{
+label:"Expense ₹",
+data:expenses,
+borderColor:"red"
+}]
+}
 });
 
 smokingChart=new Chart(document.getElementById("smokingChart"),{
 type:"line",
-data:{labels:labels,datasets:[{label:"Cigarettes",data:smokes,borderColor:"blue"}]}
+data:{
+labels:labels,
+datasets:[{
+label:"Cigarettes",
+data:smokes,
+borderColor:"blue"
+}]
+}
 });
 
 }
@@ -429,5 +432,4 @@ render();
 </script>
 
 </body>
-
 </html>
