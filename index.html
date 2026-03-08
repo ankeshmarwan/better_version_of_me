@@ -146,7 +146,7 @@ Self Improvement Dashboard
 <h3>Salary</h3>
 
 <label>Monthly Salary ₹</label>
-<input id="salaryInput" type="number" placeholder="Enter salary">
+<input id="salaryInput" type="number">
 
 <button class="salary" onclick="saveSalary()">Save Salary</button>
 
@@ -187,57 +187,26 @@ Self Improvement Dashboard
 
 <div class="summary">
 
-<div class="card">
-<p>Gym Days</p>
-<h2 id="gymTotal">0</h2>
-</div>
-
-<div class="card">
-<p>Coding Problems</p>
-<h2 id="problemTotal">0</h2>
-</div>
-
-<div class="card">
-<p>Total Cigarettes</p>
-<h2 id="cigTotal">0</h2>
-</div>
-
-<div class="card">
-<p>Smoke-Free Days</p>
-<h2 id="smokeFree">0</h2>
-</div>
-
-<div class="card">
-<p>Average / Day</p>
-<h2 id="avgCigs">0</h2>
-</div>
-
-<div class="card">
-<p>Total Money</p>
-<h2 id="moneyTotal">0</h2>
-</div>
-
-<div class="card">
-<p>Estimated Savings</p>
-<h2 id="savingTotal">0</h2>
-</div>
+<div class="card"><p>Gym Days</p><h2 id="gymTotal">0</h2></div>
+<div class="card"><p>Coding Problems</p><h2 id="problemTotal">0</h2></div>
+<div class="card"><p>Total Cigarettes</p><h2 id="cigTotal">0</h2></div>
+<div class="card"><p>Smoke-Free Days</p><h2 id="smokeFree">0</h2></div>
+<div class="card"><p>Average / Day</p><h2 id="avgCigs">0</h2></div>
+<div class="card"><p>Total Money</p><h2 id="moneyTotal">0</h2></div>
+<div class="card"><p>Estimated Savings</p><h2 id="savingTotal">0</h2></div>
 
 </div>
 
 </div>
 
 <div class="section">
-
 <h3>Expense Trend</h3>
 <canvas id="expenseChart"></canvas>
-
 </div>
 
 <div class="section">
-
-<h3>Daily Smoking Trend</h3>
+<h3>Smoking Trend</h3>
 <canvas id="smokingChart"></canvas>
-
 </div>
 
 <div class="section">
@@ -245,7 +214,6 @@ Self Improvement Dashboard
 <h3>History</h3>
 
 <table id="history">
-
 <tr>
 <th>Date</th>
 <th>Gym</th>
@@ -253,7 +221,6 @@ Self Improvement Dashboard
 <th>Money</th>
 <th>Cigarettes</th>
 </tr>
-
 </table>
 
 </div>
@@ -265,7 +232,6 @@ Self Improvement Dashboard
 function updateClock(){
 
 let now=new Date();
-
 let time=now.toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'});
 let date=now.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'});
 
@@ -276,7 +242,7 @@ document.getElementById("clock").innerText=date+" | "+time;
 setInterval(updateClock,1000);
 updateClock();
 
-let data=JSON.parse(localStorage.getItem("lifeTracker")) || [];
+let data=JSON.parse(localStorage.getItem("lifeTracker"))||[];
 
 let expenseChart;
 let smokingChart;
@@ -289,8 +255,6 @@ localStorage.setItem("salary",salary);
 
 render();
 
-alert("Salary saved");
-
 }
 
 function saveData(){
@@ -298,26 +262,40 @@ function saveData(){
 let today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 
 let gym=document.getElementById("gym").value;
-let problems=document.getElementById("problems").value;
-let money=document.getElementById("money").value;
-let cigs=document.getElementById("cigs").value;
+let problems=parseInt(document.getElementById("problems").value)||0;
+let money=parseInt(document.getElementById("money").value)||0;
+let cigs=parseInt(document.getElementById("cigs").value)||0;
 
 let error=document.getElementById("error");
 
-if(gym==="" || problems==="" || money==="" || cigs===""){
-error.innerText="All fields required";
+if(gym===""){
+error.innerText="Gym field required";
 return;
 }
 
 error.innerText="";
 
+let existing=data.find(d=>d.date===today);
+
+if(existing){
+
+existing.problems+=problems;
+existing.money+=money;
+existing.cigs+=cigs;
+
+if(gym==="1") existing.gym=1;
+
+}else{
+
 data.push({
 date:today,
-gym:parseInt(gym)||0,
-problems:parseInt(problems)||0,
-money:parseInt(money)||0,
-cigs:parseInt(cigs)||0
+gym:parseInt(gym),
+problems:problems,
+money:money,
+cigs:cigs
 });
+
+}
 
 localStorage.setItem("lifeTracker",JSON.stringify(data));
 
@@ -372,29 +350,24 @@ let smokingData=[];
 
 data.forEach(d=>{
 
-let cig=parseInt(d.cigs)||0;
-let money=parseInt(d.money)||0;
-let problems=parseInt(d.problems)||0;
-let gym=parseInt(d.gym)||0;
-
 let row=table.insertRow();
 
 row.insertCell(0).innerText=d.date;
-row.insertCell(1).innerText=gym?"Yes":"No";
-row.insertCell(2).innerText=problems;
-row.insertCell(3).innerText=money;
-row.insertCell(4).innerText=cig;
+row.insertCell(1).innerText=d.gym?"Yes":"No";
+row.insertCell(2).innerText=d.problems;
+row.insertCell(3).innerText=d.money;
+row.insertCell(4).innerText=d.cigs;
 
-gymTotal+=gym;
-problemTotal+=problems;
-moneyTotal+=money;
-cigTotal+=cig;
+gymTotal+=d.gym;
+problemTotal+=d.problems;
+moneyTotal+=d.money;
+cigTotal+=d.cigs;
 
-if(cig===0) smokeFree++;
+if(d.cigs===0) smokeFree++;
 
 labels.push(d.date);
-expenseData.push(money);
-smokingData.push(cig);
+expenseData.push(d.money);
+smokingData.push(d.cigs);
 
 });
 
@@ -404,81 +377,50 @@ document.getElementById("moneyTotal").innerText=moneyTotal;
 document.getElementById("cigTotal").innerText=cigTotal;
 document.getElementById("smokeFree").innerText=smokeFree;
 
-let avg=data.length ? (cigTotal/data.length).toFixed(2) : 0;
+let avg=data.length?(cigTotal/data.length).toFixed(2):0;
 document.getElementById("avgCigs").innerText=avg;
 
-let salary=parseInt(localStorage.getItem("salary")) || 0;
+let salary=parseInt(localStorage.getItem("salary"))||0;
 
 document.getElementById("savingTotal").innerText=salary-moneyTotal;
 
-drawExpense(labels,expenseData);
-drawSmoking(labels,smokingData);
+drawCharts(labels,expenseData,smokingData);
 
 }
 
-function drawExpense(labels,dataPoints){
+function drawCharts(labels,expenses,smokes){
 
-if(expenseChart) expenseChart.destroy();
+if(expenseChart)expenseChart.destroy();
+if(smokingChart)smokingChart.destroy();
 
 expenseChart=new Chart(document.getElementById("expenseChart"),{
 type:"line",
-data:{
-labels:labels,
-datasets:[{
-label:"Expense ₹",
-data:dataPoints,
-borderColor:"#ef4444",
-backgroundColor:"rgba(239,68,68,0.1)",
-fill:true,
-tension:0.3
-}]
-}
+data:{labels:labels,datasets:[{label:"Expense ₹",data:expenses,borderColor:"red"}]}
 });
-
-}
-
-function drawSmoking(labels,dataPoints){
-
-if(smokingChart) smokingChart.destroy();
 
 smokingChart=new Chart(document.getElementById("smokingChart"),{
 type:"line",
-data:{
-labels:labels,
-datasets:[{
-label:"Cigarettes",
-data:dataPoints,
-borderColor:"#6366f1",
-backgroundColor:"rgba(99,102,241,0.1)",
-fill:true,
-tension:0.3
-}]
-}
+data:{labels:labels,datasets:[{label:"Cigarettes",data:smokes,borderColor:"blue"}]}
 });
 
 }
 
 function exportData(){
 
-if(data.length===0){
-alert("No data to export");
-return;
-}
-
 let rows=data.map(d=>({
 Date:d.date,
-Gym:(parseInt(d.gym)||0)?"Yes":"No",
-Coding_Problems:parseInt(d.problems)||0,
-Money_Spent:parseInt(d.money)||0,
-Cigarettes_Smoked:parseInt(d.cigs)||0
+Gym:d.gym?"Yes":"No",
+Coding_Problems:d.problems,
+Money_Spent:d.money,
+Cigarettes:d.cigs
 }));
 
-let worksheet=XLSX.utils.json_to_sheet(rows);
-let workbook=XLSX.utils.book_new();
+let sheet=XLSX.utils.json_to_sheet(rows);
+let wb=XLSX.utils.book_new();
 
-XLSX.utils.book_append_sheet(workbook,worksheet,"Dashboard");
+XLSX.utils.book_append_sheet(wb,sheet,"Dashboard");
 
-XLSX.writeFile(workbook,"life_dashboard.xlsx");
+XLSX.writeFile(wb,"life_dashboard.xlsx");
 
 }
 
