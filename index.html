@@ -77,11 +77,10 @@ font-size:15px;
 }
 
 .save{background:#3b82f6;color:white;}
+.salary{background:#6366f1;color:white;}
 .clear{background:#f59e0b;color:white;}
 .reset{background:#ef4444;color:white;}
 .export{background:#10b981;color:white;}
-
-button:hover{opacity:0.9;}
 
 .summary{
 display:grid;
@@ -141,6 +140,17 @@ Self Improvement Dashboard
 </div>
 
 <div class="container">
+
+<div class="section">
+
+<h3>Salary</h3>
+
+<label>Monthly Salary ₹</label>
+<input id="salaryInput" type="number" placeholder="Enter salary">
+
+<button class="salary" onclick="saveSalary()">Save Salary</button>
+
+</div>
 
 <div class="section">
 
@@ -207,6 +217,11 @@ Self Improvement Dashboard
 <h2 id="moneyTotal">0</h2>
 </div>
 
+<div class="card">
+<p>Estimated Savings</p>
+<h2 id="savingTotal">0</h2>
+</div>
+
 </div>
 
 </div>
@@ -261,14 +276,26 @@ document.getElementById("clock").innerText=date+" | "+time;
 setInterval(updateClock,1000);
 updateClock();
 
-let today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-
 let data=JSON.parse(localStorage.getItem("lifeTracker")) || [];
 
 let expenseChart;
 let smokingChart;
 
+function saveSalary(){
+
+let salary=document.getElementById("salaryInput").value;
+
+localStorage.setItem("salary",salary);
+
+render();
+
+alert("Salary saved");
+
+}
+
 function saveData(){
+
+let today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 
 let gym=document.getElementById("gym").value;
 let problems=document.getElementById("problems").value;
@@ -286,10 +313,10 @@ error.innerText="";
 
 data.push({
 date:today,
-gym:parseInt(gym) || 0,
-problems:parseInt(problems) || 0,
-money:parseInt(money) || 0,
-cigs:parseInt(cigs) || 0
+gym:parseInt(gym)||0,
+problems:parseInt(problems)||0,
+money:parseInt(money)||0,
+cigs:parseInt(cigs)||0
 });
 
 localStorage.setItem("lifeTracker",JSON.stringify(data));
@@ -300,10 +327,12 @@ clearInputs();
 }
 
 function clearInputs(){
+
 document.getElementById("gym").value="";
 document.getElementById("problems").value="";
 document.getElementById("money").value="";
 document.getElementById("cigs").value="";
+
 }
 
 function resetData(){
@@ -312,6 +341,7 @@ if(!confirm("Delete all data?")) return;
 
 data=[];
 localStorage.clear();
+
 render();
 
 }
@@ -342,10 +372,10 @@ let smokingData=[];
 
 data.forEach(d=>{
 
-let cig=parseInt(d.cigs) || 0;
-let money=parseInt(d.money) || 0;
-let problems=parseInt(d.problems) || 0;
-let gym=parseInt(d.gym) || 0;
+let cig=parseInt(d.cigs)||0;
+let money=parseInt(d.money)||0;
+let problems=parseInt(d.problems)||0;
+let gym=parseInt(d.gym)||0;
 
 let row=table.insertRow();
 
@@ -376,6 +406,10 @@ document.getElementById("smokeFree").innerText=smokeFree;
 
 let avg=data.length ? (cigTotal/data.length).toFixed(2) : 0;
 document.getElementById("avgCigs").innerText=avg;
+
+let salary=parseInt(localStorage.getItem("salary")) || 0;
+
+document.getElementById("savingTotal").innerText=salary-moneyTotal;
 
 drawExpense(labels,expenseData);
 drawSmoking(labels,smokingData);
